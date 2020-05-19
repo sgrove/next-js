@@ -7,12 +7,12 @@ import Header from '../../components/header'
 import PostHeader from '../../components/post-header'
 import SectionSeparator from '../../components/section-separator'
 import Layout from '../../components/layout'
-import { getAllPostsWithSlug, getPostAndMorePosts } from '../../lib/api'
+import { getAllIssues, getIssueWithServerSideAccessToken } from '../../lib/api'
 import PostTitle from '../../components/post-title'
 import Head from 'next/head'
 import { CMS_NAME, ONE_GRAPH_APP_ID } from '../../lib/constants'
 import markdownToHtml from '../../lib/markdownToHtml'
-import { fetchOneGraph } from '../../lib/fetchSupportedServices'
+import { fetchOneGraph } from '../../lib/oneGraphNextClient'
 
 export default function Post({ post, morePosts, preview }) {
   const router = useRouter()
@@ -54,102 +54,32 @@ export default function Post({ post, morePosts, preview }) {
   )
 }
 
-// Should come from ENV setup
-const serverSideAccessToken = 'zLMpVnk-RJ4y-Bwl70jWnM5nJhfCcFcKbPAPN6pa1fU'
-
-const operationsDoc = `
-query GitHubIssuesQuery(
-  $first: Int = 50
-  $name: String = "graphql-js"
-  $owner: String = "graphql"
-) {
-  gitHub {
-    repository(name: $name, owner: $owner) {
-      issues(
-        first: $first
-        orderBy: { field: CREATED_AT, direction: DESC }
-      ) {
-        totalCount
-        edges {
-          node {
-            ...GitHubIssueFragment
-          }
-        }
-      }
-    }
-  }
-}
-
-query GitHubIssueQuery(
-  $name: String = "graphql-js"
-  $owner: String = "graphql"
-  $number: Int = 10
-) {
-  gitHub {
-    repository(name: $name, owner: $owner) {
-      issue(number: $number) {
-        ...GitHubIssueFragment
-      }
-    }
-  }
-}
-
-fragment GitHubIssueFragment on GitHubIssue {
-  title
-  url
-  body
-  number 
-  createdAt
-  author {
-    login
-    avatarUrl
-  }
-  repository {
-    openGraphImageUrl
-  }
-}
-`
-
 export async function getStaticProps({ params, preview = false }) {
-  const result = await fetchOneGraph(
-    ONE_GRAPH_APP_ID,
-    serverSideAccessToken,
-    operationsDoc,
-    { name: 'graphql-js', owner: 'graphql', number: parseInt(params.slug) },
-    'GitHubIssueQuery'
+  const issue = await getIssueWithServerSideAccessToken(
+    parseInt(params.issueNumber)
   )
-
-  const data = result.data?.gitHub?.repository?.issue
-  const content = await markdownToHtml(data?.body || '')
+  const content = await markdownToHtml(issue?.body || '')
 
   return {
     props: {
       preview,
       post: {
-        ...data,
+        ...issue,
         content,
       },
-      morePosts: data?.morePosts ?? [],
+      morePosts: issue?.morePosts ?? [],
     },
   }
 }
 
 export async function getStaticPaths() {
-  const result = await fetchOneGraph(
-    ONE_GRAPH_APP_ID,
-    serverSideAccessToken,
-    operationsDoc,
-    { first: 100, name: 'graphql-js', owner: 'graphql' },
-    'GitHubIssuesQuery'
-  )
+  const allIssues = (await getAllIssues(100)) || []
 
-  console.log('Result: ', result)
-
-  const allIssues = result.data?.gitHub?.repository?.edges
-
-  // /posts/14/
   return {
-    paths: allIssues?.map((edge) => `/posts/${edge.node.number}`) || [],
+    paths:
+      allIssues?.map(
+        (edge) => `/server-side-auth-data-fetch/${edge.node.number}`
+      ) || [],
     fallback: true,
   }
 }

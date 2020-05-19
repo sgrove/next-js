@@ -3,20 +3,21 @@ import MoreStories from '../components/more-stories'
 import HeroPost from '../components/hero-post'
 import Intro from '../components/intro'
 import Layout from '../components/layout'
-import { getAllPostsForHome } from '../lib/api'
+import { getAllIssues } from '../lib/api'
 import Head from 'next/head'
 import { CMS_NAME, ONE_GRAPH_APP_ID } from '../lib/constants'
 import {
-  corsPrompt,
-  exampleUsage,
   auth,
-  appId,
+  destroyAuth,
+  saveAuth,
   useAuthGuardian,
-} from '../lib/common'
-import { useFetchSupportedServices } from '../lib/fetchSupportedServices'
+  useFetchSupportedServices,
+} from '../lib/oneGraphNextClient'
 import useSWR from 'swr'
+// Only used for the initial demo display, feel free to delete
+import { corsPrompt, exampleUsage } from '../lib/metaHelpers'
 
-export default function Index({ allPosts }) {
+export default function Index({ allIssues }) {
   const [state, setState] = React.useState({
     mostRecentService: null,
   })
@@ -35,38 +36,32 @@ export default function Index({ allPosts }) {
     [auth.accessToken()]
   )
 
-  const heroPost = allPosts[0]
-  const morePosts = allPosts.slice(1)
+  const heroPost = allIssues[0]
+  const morePosts = allIssues.slice(1)
 
   return (
     <>
       <Layout>
         <Head>
-          <title>Next.js Blog Example with {CMS_NAME}</title>
+          <title>Next.js Auth Playground with OneGraph's AuthGuardian</title>
         </Head>
         <Container>
-          {corsConfigurationRequired ? corsPrompt(appId) : null}
-          {heroPost && (
-            <HeroPost
-              title={heroPost.title}
-              coverImage={heroPost.coverImage}
-              date={heroPost.date}
-              author={heroPost.author}
-              slug={heroPost.slug}
-              excerpt={heroPost.excerpt}
-            />
-          )}
-          {morePosts.length > 0 && <MoreStories posts={morePosts} />}
+          {corsConfigurationRequired ? corsPrompt(ONE_GRAPH_APP_ID) : null}
           <header className="App-header">
             <p className="description">
               Your OneGraph auth JWT preview:{' '}
-              <button
-                onClick={() => {
-                  auth.destroy()
-                }}
-              >
-                [Logout]
-              </button>
+              {!!auth.accessToken() ? (
+                <button
+                  onClick={() => {
+                    destroyAuth(auth)
+                    setState((oldState) => {
+                      return { ...oldState, mostRecentService: null }
+                    })
+                  }}
+                >
+                  [Logout]
+                </button>
+              ) : null}
             </p>
             <textarea
               className="jwt-preview card"
@@ -96,6 +91,11 @@ export default function Index({ allPosts }) {
                   onClick={async () => {
                     await auth.login(service.slug)
                     const isLoggedIn = await auth.isLoggedIn(service.slug)
+
+                    if (isLoggedIn) {
+                      saveAuth(auth)
+                    }
+
                     setState((oldState) => {
                       return {
                         ...oldState,
@@ -121,7 +121,7 @@ export default function Index({ allPosts }) {
                 className="card"
                 style={{ marginBottom: '250px' }}
                 rows={15}
-                value={exampleUsage(appId, state.mostRecentService)}
+                value={exampleUsage(ONE_GRAPH_APP_ID, state.mostRecentService)}
                 readOnly={true}
               ></textarea>
             </>
@@ -286,9 +286,9 @@ export default function Index({ allPosts }) {
   )
 }
 
-export async function getStaticProps({ preview = false }) {
-  const allPosts = (await getAllPostsForHome(preview)) || []
+export async function getStaticProps() {
+  const allIssues = (await getAllIssues(100)) || []
   return {
-    props: { allPosts },
+    props: { allIssues },
   }
 }

@@ -11,7 +11,7 @@ if (process.env.gitHubOrg && process.env.gitHubRepo) {
   AUTO_DETECTED_GITHUB_LINK = `https://github.com/${process.env.gitHubOrg}/${process.env.gitHubRepo}`
 }
 
-export let GIT_CHECKOUT_LINK
+export let GIT_CHECKOUT_LINK = 'OK'
 if (process.env.gitHubOrg && process.env.gitHubRepo) {
   GIT_CHECKOUT_LINK = `git@github.com:${process.env.gitHubOrg}/${process.env.gitHubRepo}.git`
 }

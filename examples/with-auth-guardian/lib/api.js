@@ -1,155 +1,132 @@
-const API_URL = 'https://graphql.datocms.com'
-const API_TOKEN = process.env.NEXT_EXAMPLE_CMS_DATOCMS_API_TOKEN
+import { ONE_GRAPH_APP_ID } from '../lib/constants'
+import { basicFetchOneGraph } from '../lib/oneGraphNextClient'
 
-// See: https://www.datocms.com/blog/offer-responsive-progressive-lqip-images-in-2020
-const responsiveImageFragment = `
-  fragment responsiveImageFragment on ResponsiveImage {
-  srcSet
-    webpSrcSet
-    sizes
-    src
-    width
-    height
-    aspectRatio
-    alt
-    title
-    bgColor
-    base64
+const ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN =
+  process.env.ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN
+
+const operationsDoc = `
+query GitHubIssuesQuery(
+  $first: Int = 50
+  $name: String = "nextjs-auth-guardian-starterkit"
+  $owner: String = "sgrove"
+) {
+  gitHub {
+    repository(name: $name, owner: $owner) {
+      issues(
+        first: $first
+        orderBy: { field: CREATED_AT, direction: DESC }
+      ) {
+        totalCount
+        edges {
+          node {
+            ...GitHubIssueFragment
+          }
+        }
+      }
+    }
   }
+}
+
+query GitHubIssueQuery(
+  $name: String = "nextjs-auth-guardian-starterkit"
+  $owner: String = "sgrove"
+  $number: Int = 10
+) {
+  gitHub {
+    repository(name: $name, owner: $owner) {
+      issue(number: $number) {
+        ...GitHubIssueFragment
+      }
+    }
+  }
+}
+
+fragment GitHubIssueFragment on GitHubIssue {
+  title
+  url
+  body
+  number 
+  createdAt
+  author {
+    login
+    avatarUrl
+  }
+  repository {
+    openGraphImageUrl
+  }
+}
+
+query FindMeOnGitHub {
+  me {
+    github {
+      bio
+      email
+      databaseId
+      id
+      name
+    }
+  }
+}
 `
 
-async function fetchAPI(query, { variables, preview } = {}) {
-  const res = await fetch(API_URL + (preview ? '/preview' : ''), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${API_TOKEN}`,
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
-  })
-
-  const json = await res.json()
-  if (json.errors) {
-    console.error(json.errors)
-    throw new Error('Failed to fetch API')
+export async function getAllIssues(first, repoForIssues) {
+  const repo = repoForIssues || {
+    name: 'nextjs-auth-guardian-starterkit',
+    owner: 'sgrove',
   }
-  return json.data
-}
-
-export async function getPreviewPostBySlug(slug) {
-  const data = await fetchAPI(
-    `
-    query PostBySlug($slug: String) {
-      post(filter: {slug: {eq: $slug}}) {
-        slug
-      }
-    }`,
-    {
-      preview: true,
-      variables: {
-        slug,
-      },
-    }
+  const result = await basicFetchOneGraph(
+    ONE_GRAPH_APP_ID,
+    ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN,
+    operationsDoc,
+    { owner: repo.owner, name: repo.name, first: first },
+    'GitHubIssuesQuery'
   )
-  return data?.post
+
+  const allIssues = result.data?.gitHub?.repository?.edges
+
+  return allIssues || null
 }
 
-export async function getAllPostsWithSlug() {
-  const data = fetchAPI(`
-    {
-      allPosts {
-        slug
-      }
-    }
-  `)
-  return data?.allPosts
-}
-
-export async function getAllPostsForHome(preview) {
-  const data = await fetchAPI(
-    `
-    {
-      allPosts(orderBy: date_DESC, first: 20) {
-        title
-        slug
-        excerpt
-        date
-        coverImage {
-          responsiveImage(imgixParams: {fm: jpg, fit: crop, w: 2000, h: 1000 }) {
-            ...responsiveImageFragment
-          }
-        }
-        author {
-          name
-          picture {
-            url(imgixParams: {fm: jpg, fit: crop, w: 100, h: 100, sat: -100})
-          }
-        }
-      }
-    }
-
-    ${responsiveImageFragment}
-  `,
-    { preview }
-  )
-  return data?.allPosts
-}
-
-export async function getPostAndMorePosts(slug, preview) {
-  const data = await fetchAPI(
-    `
-  query PostBySlug($slug: String) {
-    post(filter: {slug: {eq: $slug}}) {
-      title
-      slug
-      content
-      date
-      ogImage: coverImage{
-        url(imgixParams: {fm: jpg, fit: crop, w: 2000, h: 1000 })
-      }
-      coverImage {
-        responsiveImage(imgixParams: {fm: jpg, fit: crop, w: 2000, h: 1000 }) {
-          ...responsiveImageFragment
-        }
-      }
-      author {
-        name
-        picture {
-          url(imgixParams: {fm: jpg, fit: crop, w: 100, h: 100, sat: -100})
-        }
-      }
-    }
-
-    morePosts: allPosts(orderBy: date_DESC, first: 2, filter: {slug: {neq: $slug}}) {
-      title
-      slug
-      excerpt
-      date
-      coverImage {
-        responsiveImage(imgixParams: {fm: jpg, fit: crop, w: 2000, h: 1000 }) {
-          ...responsiveImageFragment
-        }
-      }
-      author {
-        name
-        picture {
-          url(imgixParams: {fm: jpg, fit: crop, w: 100, h: 100, sat: -100})
-        }
-      }
-    }
+export async function getIssueWithAccessToken(
+  accessToken,
+  number,
+  repoForIssue
+) {
+  const repo = repoForIssue || {
+    name: 'nextjs-auth-guardian-starterkit',
+    owner: 'sgrove',
   }
-
-  ${responsiveImageFragment}
-  `,
-    {
-      preview,
-      variables: {
-        slug,
-      },
-    }
+  const result = await basicFetchOneGraph(
+    ONE_GRAPH_APP_ID,
+    accessToken,
+    operationsDoc,
+    { owner: repo.owner, name: repo.name, number: number },
+    'GitHubIssueQuery'
   )
-  return data
+
+  const issue = result.data?.gitHub?.repository?.issue
+
+  return issue || null
+}
+
+export async function getIssueWithServerSideAccessToken(number, repoForIssue) {
+  return getIssueWithAccessToken(
+    ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN,
+    number,
+    repoForIssue
+  )
+}
+
+export async function findMeOnGitHub(accessToken) {
+  const result = await basicFetchOneGraph(
+    ONE_GRAPH_APP_ID,
+    accessToken,
+    operationsDoc,
+    {},
+    'FindMeOnGitHub'
+  )
+
+  const me = result.data?.me?.github
+
+  return me || null
 }

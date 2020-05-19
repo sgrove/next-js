@@ -5,6 +5,12 @@ import {
   GIT_CHECKOUT_LINK,
   ONE_GRAPH_APP_ID,
 } from '../lib/constants'
+import {
+  auth,
+  requireUserLoggedIn,
+  useAuthGuardian,
+} from '../lib/oneGraphNextClient'
+
 import copy from 'copy-to-clipboard'
 
 export const gitHubIcon = (
@@ -30,6 +36,17 @@ const gitHubLink =
 
 export default function Alert({ preview }) {
   const [copied, setCopied] = React.useState(false)
+
+  const userAuth = React.useMemo(
+    () => {
+      const authGuardianData = useAuthGuardian(auth)
+      return authGuardianData.user
+    },
+    // Refetch user data if the accessToken changes
+    [auth.accessToken()]
+  )
+
+  const username = requireUserLoggedIn(userAuth).userId
 
   return (
     <div
@@ -86,7 +103,53 @@ export default function Alert({ preview }) {
                   : 'Check out locally'}
               </button>
             ) : null}
+            {' | '}
+            <span>
+              <a
+                className="App-link"
+                href="https://www.onegraph.com/docs/auth_guardian.html"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View the Vercel dashboard
+              </a>
+            </span>
           </span>
+        </div>
+
+        <div className="py-2 text-center text-sm">
+          <span>Example Pages: </span>
+          <span>
+            <a href={`/server-side-auth-data-fetch/1`}>
+              Server-side GitHub API call
+            </a>
+          </span>
+          {' | '}{' '}
+          <span>
+            <a href={`/logged-in-user-data-fetch/1`}>Requiring login</a>
+          </span>
+          {' | '}
+          <span>
+            <a href="/admin">
+              Requiring <code>admin</code> role
+            </a>
+          </span>
+          {' | '}{' '}
+          {!!username ? (
+            <>
+              {`Welcome, ${username}`}{' '}
+              <button
+                onClick={() => {
+                  auth.destroy()
+                  window.location.reload()
+                }}
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <a href="/">Login</a>
+          )}
         </div>
       </Container>
     </div>
