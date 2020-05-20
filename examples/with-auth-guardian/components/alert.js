@@ -135,6 +135,8 @@ export default function Alert({ preview }) {
             </a>
           </span>
           {' | '}{' '}
+          <a href="/feedback">Submit Feedback (create GitHub issue) example</a>
+          {' | '}{' '}
           {!!username ? (
             <>
               {`Welcome, ${username}`}{' '}

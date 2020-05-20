@@ -1,8 +1,8 @@
-import { ONE_GRAPH_APP_ID } from '../lib/constants'
+import {
+  ONE_GRAPH_APP_ID,
+  ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN,
+} from '../lib/constants'
 import { basicFetchOneGraph } from '../lib/oneGraphNextClient'
-
-const ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN =
-  process.env.ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN
 
 const operationsDoc = `
 query GitHubIssuesQuery(
@@ -45,6 +45,7 @@ fragment GitHubIssueFragment on GitHubIssue {
   title
   url
   body
+  id
   number 
   createdAt
   author {
@@ -64,6 +65,18 @@ query FindMeOnGitHub {
       databaseId
       id
       name
+    }
+  }
+}
+
+mutation CreateGitHubIssueMutation($input: GitHubCreateIssueInput!) {
+  gitHub {
+    createIssue(input: $input) {
+      issue {
+        id
+        number
+        url
+      }
     }
   }
 }
@@ -129,4 +142,22 @@ export async function findMeOnGitHub(accessToken) {
   const me = result.data?.me?.github
 
   return me || null
+}
+
+export async function createGitHubIssue(accessToken, issue) {
+  const result = await basicFetchOneGraph(
+    ONE_GRAPH_APP_ID,
+    accessToken,
+    operationsDoc,
+    { input: issue },
+    'CreateGitHubIssueMutation'
+  )
+
+  const createdIssue = result.data?.gitHub?.createIssue?.issue
+
+  return createdIssue || null
+}
+
+export async function createGitHubIssueWithServerSideAccessToken(issue) {
+  return createGitHubIssue(ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN, issue)
 }

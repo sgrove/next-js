@@ -10,14 +10,23 @@ import Layout from '../../components/layout'
 import { getAllIssues, getIssueWithServerSideAccessToken } from '../../lib/api'
 import PostTitle from '../../components/post-title'
 import Head from 'next/head'
-import { CMS_NAME, ONE_GRAPH_APP_ID } from '../../lib/constants'
+import {
+  ONE_GRAPH_APP_ID,
+  ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN,
+} from '../../lib/constants'
+import { serverSideAuthTokenConfigurationPrompt } from '../../lib/metaHelpers'
 import markdownToHtml from '../../lib/markdownToHtml'
 import { fetchOneGraph } from '../../lib/oneGraphNextClient'
 
 export default function Post({ post, morePosts, preview }) {
   const router = useRouter()
-  if (!router.isFallback && !post?.number) {
-    return <ErrorPage statusCode={404} />
+  if (!router.isFallback && !ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN) {
+    return (
+      <ErrorPage
+        statusCode={511}
+        title={serverSideAuthTokenConfigurationPrompt(ONE_GRAPH_APP_ID)}
+      />
+    )
   }
   return (
     <Layout preview={preview}>

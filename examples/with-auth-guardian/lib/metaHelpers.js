@@ -54,3 +54,21 @@ export function corsPrompt(appId) {
     </nav>
   )
 }
+
+export function serverSideAuthTokenConfigurationPrompt(appId) {
+  return (
+    <>
+      It looks like you might not have set your server-side auth token with
+      GitHub access in{' '}
+      <code>`lib/constants.js:ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN`</code>!
+      <br /> You can create one in just a few clicks on{' '}
+      <a
+        target="_blank"
+        href={`https://www.onegraph.com/dashboard/app/${ONE_GRAPH_APP_ID}/auth/server-side`}
+      >
+        your OneGraph app dashboard here⤴ and then set it as an environmental
+        variable for this Next.js application
+      </a>
+    </>
+  )
+}
