@@ -27,7 +27,7 @@ import {
 export default function Post({ post, me, isLoggedIn }) {
   const router = useRouter()
   if (!isLoggedIn) {
-    return makeLoggedInError()
+    return makeLoggedInError('GitHub')
   }
   if (!router.isFallback && !post?.number) {
     return <ErrorPage statusCode={404} />

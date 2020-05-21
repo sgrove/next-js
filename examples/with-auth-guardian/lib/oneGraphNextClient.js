@@ -259,14 +259,15 @@ export const requireUserLoggedIn = (authGuardianJwt) => {
   return { userId: userId }
 }
 
-export const makeLoggedInError = () => {
+export const makeLoggedInError = (service) => {
   return (
     <ErrorPage
       title={
         <>
-          You must be logged in as an admin to view this page, but I checked for
-          your <code>{authGuardianCookieName}</code> cookie and you're not
-          logged in at all
+          You must be logged in {!!service ? `to ${service}` : null} in order to
+          view this page, but according to your{' '}
+          <code>{authGuardianCookieName}</code> cookie you're not logged in via
+          any service
         </>
       }
       statusCode={401}

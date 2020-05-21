@@ -67,7 +67,9 @@ export function serverSideAuthTokenConfigurationPrompt(appId) {
         href={`https://www.onegraph.com/dashboard/app/${ONE_GRAPH_APP_ID}/auth/server-side`}
       >
         your OneGraph app dashboard here⤴ and then set it as an environmental
-        variable for this Next.js application
+        variable: <br />
+        <code>ONE_GRAPH_SERVER_SIDE_ACCESS_TOKEN=&lt;your_token&gt;</code> for
+        this Next.js application
       </a>
     </>
   )

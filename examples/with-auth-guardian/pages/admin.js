@@ -32,7 +32,7 @@ export default function Index({
   agCookie,
 }) {
   if (!isLoggedIn) {
-    return makeLoggedInError(agCookie)
+    return makeLoggedInError()
   }
 
   if (!isAuthorized) {
